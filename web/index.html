@@ -151,7 +151,10 @@ footer{color:var(--dim);font-size:13px}
 </div></section>
 
 <section class="band" style="padding-top:0"><div class="wrap grid2">
-  <div class="card"><h2>Where to face</h2><svg id="compass" viewBox="-110 -110 220 220" role="img" aria-label="Radiant direction"></svg><p class="mute" id="faceTxt" style="margin-top:10px"></p></div>
+  <div class="card"><h2>Watch the night before you go</h2><p class="mute" style="font-size:14px">Your whole sky, zenith in the middle, horizon at the edge. Meteors fire at the rate the model expects, from the real radiant, through the forecast cloud, under your site's light dome. One second here is four minutes there.</p>
+    <div class="fig" id="domeBox" style="min-height:0;aspect-ratio:1;max-width:460px;margin:0 auto"><canvas id="dome" aria-label="Simulated sky"></canvas></div>
+    <div class="row2"><button type="button" id="domePlay" aria-pressed="false">Play</button><input type="range" id="domeT" min="0" max="100" value="50" aria-label="Time of night" style="flex:1 1 160px"><span class="val" id="domeClock" style="min-width:6em;text-align:right"></span></div>
+    <p class="mute" id="faceTxt" style="margin-top:10px"></p><p class="note" id="domeCount"></p></div>
   <div class="card"><h2>Parking near the pick</h2><p class="mute" id="parkIntro">Real parking lots, viewpoints, campgrounds and rest areas from OpenStreetMap within 4 km. Needs the live version.</p><button type="button" id="findPark">Find places to park</button><ul id="parking"></ul></div>
 </div></section>
 

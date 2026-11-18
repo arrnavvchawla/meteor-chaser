@@ -277,23 +277,104 @@ function renderHours(r, N) {
     <div class="hr" style="padding:0;margin-top:-4px"><span></span><span class="cl">${S.live && r.c.wx && x.cl ? x.cl + '% cloud' : ''}</span><span></span></div>`).join('') || '<p class="mute">No dark hours this night.</p>';
 }
 
-// ---------- compass ----------
+// ---------- live sky preview ----------
+// All-sky dome (zenith-centred, equal-angle). Meteors are drawn from a Poisson process at the model's
+// rate for that instant, aimed away from each shower's radiant, longer far from it, coloured by speed.
+const dome = { mets: [], play: false, last: 0, k: 50, stars: [], seen: 0, seenLeo: 0 };
+{ let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 900; i++) { const z = Math.acos(rnd()) * 180 / Math.PI; dome.stars.push({ alt: 90 - z, az: rnd() * 360, m: -1 + 7.5 * Math.pow(rnd(), 0.35) }); } }
+const domePt = (alt, az, R) => { const r = (90 - alt) / 90 * R, a = az * Math.PI / 180; return [r * Math.sin(a), -r * Math.cos(a)]; };
+function angSep(a1, z1, a2, z2) { const d = Math.PI / 180; return Math.acos(Math.min(1, Math.sin(a1 * d) * Math.sin(a2 * d) + Math.cos(a1 * d) * Math.cos(a2 * d) * Math.cos((z1 - z2) * d))) / d; }
 function renderCompass(r) {
-  const prof = r.c.prof[S.night], mid = prof[Math.floor((r.w.i + r.w.j) / 2)], sh = topShower(r);
-  let h = '<circle r="100" fill="#0c1124" stroke="#232c52"/><circle r="66" fill="none" stroke="#232c52" stroke-dasharray="2 4"/><circle r="33" fill="none" stroke="#232c52" stroke-dasharray="2 4"/>';
-  h += [['N', 0, -86], ['E', 86, 4], ['S', 0, 94], ['W', -86, 4]].map(([t, x, y]) => `<text x="${x}" y="${y}" text-anchor="middle" fill="#9aa4c6" font-size="13" font-family="Sora">${t}</text>`).join('');
-  const pt = (alt, az) => { const rr = (90 - alt) / 90 * 100, a = az * Math.PI / 180; return [rr * Math.sin(a), -rr * Math.cos(a)]; };
-  let txt = '';
-  if (sh && mid.by[sh.id] && mid.by[sh.id].alt > 0) {
-    const { alt, az } = mid.by[sh.id], [x, y] = pt(alt, az), look = pt(Math.min(70, alt + 35), az);
-    h += `<line x1="${x}" y1="${y}" x2="${look[0]}" y2="${look[1]}" stroke="#ffc9a3" stroke-width="2" stroke-dasharray="4 3"/><circle cx="${x}" cy="${y}" r="7" fill="#ffc9a3"/><text x="${x}" y="${y - 12}" text-anchor="middle" fill="#ffc9a3" font-size="12">radiant</text><circle cx="${look[0]}" cy="${look[1]}" r="12" fill="none" stroke="#7fdcff" stroke-width="2"/>`;
-    S.faceWord = azWord(az);
-    txt = `At ${tfmt(mid.t, S.origin.tz)} the ${esc(sh.name)} radiant is ${Math.round(alt)}° up in the ${azWord(az)}. Don't stare at it: look at the blue ring, about 35° away from it, where trails run longest. ${sh.v > 60 ? 'These are fast meteors, often with glowing trains.' : sh.v < 35 ? 'These are slow meteors, easy to follow.' : ''}${alt < 15 ? ' The radiant is low: watch for long earth-grazers skimming the horizon.' : ''}`;
-  } else { S.faceWord = 'overhead'; txt = 'No strong shower radiant is up. Look straight up, where the sky is darkest, and count sporadic meteors.'; }
-  if (mid.moonAlt > 0) { const [x, y] = pt(mid.moonAlt, mid.moonAz); h += `<circle cx="${x}" cy="${y}" r="8" fill="#cfd6ee"/><text x="${x}" y="${y + 20}" text-anchor="middle" fill="#cfd6ee" font-size="12">moon</text>`; txt += ` The moon (${Math.round(mid.moonIllum * 100)}% lit) is up in the ${azWord(mid.moonAz)}; keep it behind you.`; }
-  h += '<circle r="3" fill="#e9edf8"/><text y="16" text-anchor="middle" fill="#6c769c" font-size="11">zenith</text>';
-  $('#compass').innerHTML = h; $('#faceTxt').textContent = txt;
+  dome.r = r; dome.prof = r.c.prof[S.night]; dome.mets = []; dome.seen = 0; dome.seenSh = 0;
+  const dark = dome.prof.map((p, i) => (p.sunAlt < -12 ? i : -1)).filter((i) => i >= 0);
+  dome.lo = dark[0] ?? 0; dome.hi = dark[dark.length - 1] ?? dome.prof.length - 1;
+  const el = $('#domeT'); el.min = dome.lo; el.max = dome.hi; el.step = 0.01; dome.k = r.w.i; el.value = dome.k;
+  // light domes: towns ≥ 100k within 200 km, glow toward their azimuth
+  dome.glow = [];
+  for (const c of NAMED) { if (c[2] < 100) break; const d = MC.hav(r.c.lat, r.c.lon, c[0], c[1]); if (d < 200 && d > 2) {
+    const y = Math.sin((c[1] - r.c.lon) * Math.PI / 180) * Math.cos(c[0] * Math.PI / 180), x = Math.cos(r.c.lat * Math.PI / 180) * Math.sin(c[0] * Math.PI / 180) - Math.sin(r.c.lat * Math.PI / 180) * Math.cos(c[0] * Math.PI / 180) * Math.cos((c[1] - r.c.lon) * Math.PI / 180);
+    dome.glow.push({ az: (Math.atan2(y, x) * 180 / Math.PI + 360) % 360, s: Math.min(0.6, 0.002 * c[2] * 1000 * Math.pow(d, -2.5) * 8) }); } }
+  const sh = topShower(r), mid = dome.prof[Math.floor((r.w.i + r.w.j) / 2)];
+  let txt;
+  if (sh && mid.by[sh.id]?.alt > 0) { const { alt, az } = mid.by[sh.id]; S.faceWord = azWord(az);
+    txt = `At ${tfmt(mid.t, S.origin.tz)} the ${sh.name} radiant (peach dot) is ${Math.round(alt)}° up in the ${azWord(az)}. Lie with your feet toward it and look about 35° away from it, where trails run longest.${sh.v > 60 ? ' Fast meteors: expect glowing trains on the bright ones.' : sh.v < 35 ? ' Slow meteors, easy to follow.' : ''}${alt < 15 ? ' The radiant is low: watch the horizon for long earth-grazers.' : ''}`;
+  } else { S.faceWord = 'overhead'; txt = 'No strong radiant is up during your watch. Look straight up, where the sky is darkest.'; }
+  if (mid.moonAlt > 0) txt += ` The moon (${Math.round(mid.moonIllum * 100)}% lit) is up in the ${azWord(mid.moonAz)}: keep it behind you.`;
+  $('#faceTxt').textContent = txt; drawDome();
 }
+function spawn(p, dt) {
+  const sim = dt * 240 / 3600; // hours of sky per real second × dt
+  const add = (n, sh) => { let k = n * sim; while (k > 0) { if (Math.random() < Math.min(1, k)) mk(sh, p); k -= 1; } };
+  for (const sh of MC.SHOWERS) { const b = p.by[sh.id]; if (b && b.n > 0) add(b.n * S.k, { sh, b }); }
+  add(p.spor * S.k, null);
+}
+function mk(src, p) {
+  const alt = 90 - Math.acos(0.17 + 0.83 * Math.random()) * 180 / Math.PI, az = Math.random() * 360;
+  let dir, len, speed, col;
+  if (src) {
+    const sep = angSep(alt, az, src.b.alt, src.b.az); if (sep < 3) return;
+    dir = { ralt: src.b.alt, raz: src.b.az }; len = Math.min(40, 6 + sep * 0.45) * (0.6 + Math.random() * 0.6);
+    speed = src.sh.v; col = src.sh.v > 60 ? [225, 255, 240] : src.sh.v < 35 ? [255, 214, 170] : [240, 240, 255]; dome.seenSh++;
+  } else { dir = null; len = 6 + Math.random() * 18; speed = 25 + Math.random() * 45; col = [235, 238, 255]; }
+  const mag = -1 + Math.random() * 4;
+  dome.mets.push({ alt, az, dir, len, speed, col, a: Math.min(1, Math.pow(2.512, (2 - mag) / 1.8)), t: 0, dur: 0.35 + 18 / speed, rot: Math.random() * 360, train: src && speed > 60 && mag < 0 });
+  dome.seen++;
+}
+function drawDome() {
+  const cv = $('#dome'); if (!cv || !dome.prof) return;
+  const W = cv.parentElement.clientWidth, dpr = devicePixelRatio || 1; if (!W) return;
+  cv.width = W * dpr; cv.height = W * dpr; const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, W / 2, W / 2);
+  const R = W / 2 - 24, kk = Math.max(dome.lo, Math.min(dome.hi, dome.k)), p = dome.prof[Math.floor(kk)];
+  const tw = Math.max(0, Math.min(1, (p.sunAlt + 18) / 12)), lm = p.lm;
+  // sky
+  const grd = g.createRadialGradient(0, 0, 0, 0, 0, R);
+  grd.addColorStop(0, `rgb(${6 + 30 * tw},${9 + 40 * tw},${22 + 70 * tw})`); grd.addColorStop(1, `rgb(${14 + 40 * tw},${18 + 50 * tw},${40 + 70 * tw})`);
+  g.beginPath(); g.arc(0, 0, R, 0, 7); g.fillStyle = grd; g.fill(); g.save(); g.clip();
+  for (const gl of dome.glow) { const [x, y] = domePt(0, gl.az, R), gg = g.createRadialGradient(x, y, 0, x, y, R * 0.5);
+    gg.addColorStop(0, `rgba(255,170,110,${0.55 * gl.s})`); gg.addColorStop(1, 'rgba(255,170,110,0)'); g.fillStyle = gg; g.fillRect(-R, -R, 2 * R, 2 * R); }
+  for (const s of dome.stars) { if (s.m > lm) continue; const [x, y] = domePt(s.alt, s.az, R), b = Math.min(1, Math.pow(2.512, (lm - s.m) / 2.2) / 3.5);
+    g.fillStyle = `rgba(233,237,248,${b})`; g.fillRect(x, y, s.m < 1.5 ? 2 : 1.2, s.m < 1.5 ? 2 : 1.2); }
+  if (p.moonAlt > 0) { const [x, y] = domePt(p.moonAlt, p.moonAz, R), mg = g.createRadialGradient(x, y, 0, x, y, R * 0.6);
+    mg.addColorStop(0, `rgba(210,220,245,${0.35 * p.moonIllum})`); mg.addColorStop(1, 'rgba(210,220,245,0)'); g.fillStyle = mg; g.fillRect(-R, -R, 2 * R, 2 * R);
+    g.beginPath(); g.arc(x, y, 7, 0, 7); g.fillStyle = '#e6ebf8'; g.fill(); }
+  const sh = topShower(dome.r), rb = sh && p.by[sh.id];
+  if (rb && rb.alt > 0) { const [x, y] = domePt(rb.alt, rb.az, R); g.beginPath(); g.arc(x, y, 5, 0, 7); g.fillStyle = '#ffc9a3'; g.fill(); }
+  // meteors
+  for (const m of dome.mets) {
+    const f = m.t / m.dur, head = Math.min(1, f * 1.25), [x0, y0] = domePt(m.alt, m.az, R);
+    let ux, uy; if (m.dir) { const [rx, ry] = domePt(m.dir.ralt, m.dir.raz, R); ux = x0 - rx; uy = y0 - ry; } else { ux = Math.cos(m.rot); uy = Math.sin(m.rot); }
+    const nn = Math.hypot(ux, uy) || 1, L = m.len / 90 * R; ux /= nn; uy /= nn;
+    const hx = x0 + ux * L * head, hy = y0 + uy * L * head, tx = x0 + ux * L * Math.max(0, head - 0.55), ty = y0 + uy * L * Math.max(0, head - 0.55);
+    const fade = f < 0.8 ? 1 : (1 - f) / 0.2, [r1, g1, b1] = m.col, lg = g.createLinearGradient(tx, ty, hx, hy);
+    lg.addColorStop(0, `rgba(${r1},${g1},${b1},0)`); lg.addColorStop(1, `rgba(${r1},${g1},${b1},${m.a * fade * p.T})`);
+    g.strokeStyle = lg; g.lineWidth = 1 + m.a * 1.6; g.lineCap = 'round'; g.beginPath(); g.moveTo(tx, ty); g.lineTo(hx, hy); g.stroke();
+    if (m.train && f > 0.6) { g.strokeStyle = `rgba(150,255,200,${0.25 * (1 - f)})`; g.lineWidth = 2; g.beginPath(); g.moveTo(x0 + ux * L * 0.3, y0 + uy * L * 0.3); g.lineTo(hx, hy); g.stroke(); }
+  }
+  // cloud veil
+  if (p.T < 0.98) { g.fillStyle = `rgba(70,78,104,${(1 - p.T) * 0.75})`; g.fillRect(-R, -R, 2 * R, 2 * R); }
+  g.restore();
+  g.strokeStyle = '#232c52'; g.lineWidth = 1; for (const a of [0, 30, 60]) { g.beginPath(); g.arc(0, 0, (90 - a) / 90 * R, 0, 7); g.stroke(); }
+  g.fillStyle = '#9aa4c6'; g.font = '13px Sora, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([t, az]) => { const [x, y] = domePt(0, az, R + 13); g.fillText(t, x, y); });
+  $('#domeClock').textContent = tfmt(p.t, S.origin.tz);
+  $('#domeCount').textContent = `${fmt1(p.total * S.k)} meteors an hour right now${rb && rb.alt > 0 ? `, ${fmt1(rb.n * S.k)} of them ${sh.name}` : ''}. ${Math.round((1 - p.T) * 100)}% of the sky lost to cloud. Seen so far: ${dome.seen}.`;
+}
+function domeLoop(ts) {
+  if (!dome.play) return;
+  const dt = Math.min(0.1, (ts - (dome.last || ts)) / 1000); dome.last = ts;
+  dome.k += dt * 240 / 600; // 10-minute profile steps
+  if (dome.k > dome.hi) { dome.k = dome.lo; dome.seen = 0; }
+  $('#domeT').value = dome.k;
+  const p = dome.prof[Math.floor(dome.k)]; if (p) spawn(p, dt);
+  for (const m of dome.mets) m.t += dt; dome.mets = dome.mets.filter((m) => m.t < m.dur);
+  drawDome(); requestAnimationFrame(domeLoop);
+}
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+$('#domePlay').onclick = () => { dome.play = !dome.play; $('#domePlay').textContent = dome.play ? 'Pause' : 'Play'; $('#domePlay').setAttribute('aria-pressed', dome.play); dome.last = 0; if (dome.play) requestAnimationFrame(domeLoop); };
+$('#domeT').addEventListener('input', (e) => { dome.k = +e.target.value; dome.mets = []; drawDome(); });
+new ResizeObserver(() => drawDome()).observe($('#domeBox'));
+if (!reduceMotion) setTimeout(() => { if (!dome.play && dome.prof) $('#domePlay').click(); }, 1200);
 
 // ---------- calendar ----------
 function renderCalendar() {

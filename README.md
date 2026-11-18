@@ -16,7 +16,8 @@ Give it a starting point, a night, how far you'll drive and how long you'll watc
 6. **Picks your point on the frontier** from one number: how many meteors an hour of driving is worth to you.
 7. **Gives you a plan**: leave, lights off, stop, home. Where to face. Real parking lots, viewpoints and campgrounds within 4 km from OpenStreetMap. A copy-ready plan for the group chat.
 8. **Shows the next 12 months**: every major shower, its best hour from your darkest reachable site, and how much moon is in the way.
-9. **Learns your eyes**: enter what it predicted and what you counted, and every later number scales by your ratio.
+9. **Plays the night before you go**: an all-sky time-lapse of your site. Meteors fire at the model's rate from the real radiant, coloured by speed, with trains on the fast bright ones, through the forecast cloud, under the light domes of the towns around you.
+10. **Learns your eyes**: enter what it predicted and what you counted, and every later number scales by your ratio.
 
 ## Run it
 

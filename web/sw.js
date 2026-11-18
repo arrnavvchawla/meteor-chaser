@@ -1,6 +1,6 @@
 // Offline shell: the model, city lights and land mask work with no signal.
 // Forecasts, roads and parking are fetched fresh when there is a connection.
-const CACHE = 'meteor-chaser-v1';
+const CACHE = 'meteor-chaser-v2';
 const SHELL = ['./', 'index.html', 'app.js', 'model.js', 'cities.json', 'land.json', 'icon.svg', 'manifest.webmanifest'];
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())));
