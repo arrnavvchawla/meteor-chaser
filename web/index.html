@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meteor Chaser</title>
+<meta name="description" content="Find the best place and hour to watch a meteor shower from anywhere on Earth.">
+<meta name="theme-color" content="#060914">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* VOICE  field instrument for one cold night: direct, exact, a little thrilled.
+   IDEA   an astronomer's finder chart crossed with a light-pollution survey plate.
+   PICTURE the live sky-glow map of your region, every candidate site plotted, the Pareto frontier ringed.
+   COLOUR night-sky ink, starlight text, glacier-cyan for the frontier, meteor-peach for the pick. Same at day and night.
+   TYPE   Sora for titles and big numbers, IBM Plex Sans for text, Plex Mono for coordinates. */
+:root{color-scheme:dark;--bg:#060914;--bg2:#0c1124;--bg3:#141b36;--line:#232c52;--ink:#e9edf8;--mute:#9aa4c6;--dim:#6c769c;--ice:#7fdcff;--peach:#ffc9a3;--warn:#ff8f8f;--ok:#9be8b5;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px)}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip;padding-bottom:var(--safe-b)}
+h1,h2,h3,.big{font-family:Sora,system-ui,sans-serif;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:clamp(30px,4.4vw,46px);line-height:1.05;margin:0 0 6px}
+h2{font-size:clamp(22px,2.6vw,30px);line-height:1.1;margin:0 0 14px}
+h3{font-size:17px;margin:0 0 8px}
+p{margin:0 0 12px;max-width:68ch}
+a{color:var(--ice)}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px}
+.mute{color:var(--mute)}.dim{color:var(--dim)}
+.band{padding:clamp(20px,3.4vw,44px) max(4vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+header.band{padding-top:calc(clamp(18px,3vw,36px) + var(--safe-t));padding-bottom:12px}
+.lede{color:var(--mute);font-size:17px}
+#status{font-size:14px;color:var(--mute);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px;white-space:nowrap}
+.pill.live{border-color:#2f6b52;color:var(--ok)}.pill.off{border-color:#5a4a2a;color:var(--peach)}
+/* controls */
+.controls{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr) repeat(3,minmax(0,1.2fr));gap:12px;align-items:end}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
+input,select,button{font:inherit;font-size:16px;color:var(--ink)}
+input[type=text],input[type=date],input[type=number],select{width:100%;height:44px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:0 12px}
+input[type=range]{width:100%;height:44px;accent-color:var(--ice);background:none}
+.val{font-family:Sora,sans-serif;color:var(--ink);font-size:14px}
+button,.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--bg3);cursor:pointer;text-decoration:none;color:var(--ink);font-size:15px}
+button.primary{background:var(--ice);color:#04121b;border-color:var(--ice);font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--ice);outline-offset:2px}
+.search{position:relative}
+#sugg{position:absolute;z-index:5;left:0;right:0;top:100%;margin-top:4px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:none}
+#sugg button{display:flex;width:100%;justify-content:space-between;border:0;border-radius:0;background:none;min-height:42px}
+#sugg button:hover,#sugg button:focus{background:var(--bg3)}
+.row2{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:none;min-height:40px}
+.seg button[aria-pressed=true]{background:var(--bg3);color:var(--ice)}
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:16px}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:16px}
+.fig{position:relative;min-height:340px}
+.fig>canvas,.fig>svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+#map{min-height:min(62vh,560px);border-radius:16px;overflow:hidden;background:#03050b;border:1px solid var(--line)}
+.legend{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);margin-top:8px;flex-wrap:wrap}
+.ramp{height:10px;flex:1 1 160px;border-radius:5px;background:linear-gradient(90deg,#fff1c8,#fab47a,#d6605f,#aa4078,#783080,#462878,#22225c,#101434,#06081a)}
+.pick .big{font-size:clamp(40px,6vw,60px);line-height:1}
+.pickname{font-family:Sora,sans-serif;font-size:21px;line-height:1.2;margin:4px 0 2px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.tile{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.tile b{display:block;font-family:Sora,sans-serif;font-size:19px;font-weight:600;white-space:nowrap}
+.tile span{font-size:12.5px;color:var(--mute)}
+.sched{list-style:none;padding:0;margin:8px 0 12px}
+.sched li{display:grid;grid-template-columns:5.6em minmax(0,1fr);gap:10px;padding:5px 0;border-top:1px solid var(--line)}
+.sched time{font-family:Sora,sans-serif;font-size:17px;white-space:nowrap;color:var(--peach)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+/* nights */
+#nights{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.night{text-align:left;display:block;padding:10px;border-radius:12px;min-height:0}
+.night[aria-pressed=true]{border-color:var(--ice);box-shadow:inset 0 0 0 1px var(--ice)}
+.night .d{font-size:13px;color:var(--mute)}.night .n{font-family:Sora,sans-serif;font-size:22px}.night .s{font-size:12.5px;color:var(--mute)}
+.moonbar{height:4px;border-radius:2px;background:var(--line);margin-top:6px;overflow:hidden}.moonbar i{display:block;height:100%;background:#cfd6ee}
+/* second row */
+.grid2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+#pareto{min-height:320px}
+.hours .hr{display:grid;grid-template-columns:4.2em minmax(0,1fr) 3.2em;gap:8px;align-items:center;font-size:14px;padding:3px 0}
+.hours .bar{height:16px;background:var(--bg);border-radius:4px;overflow:hidden;position:relative}
+.hours .bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#3d5ea8,var(--ice))}
+.hours .bar i.sh{background:var(--peach)}
+.hours .n{text-align:right;font-family:Sora,sans-serif}
+.hours .cl{font-size:12px;color:var(--dim)}
+#compass{width:100%;max-width:300px;aspect-ratio:1;display:block;margin:0 auto}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;color:var(--mute);font-size:13px}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scroll{overflow-x:auto}
+#parking li{padding:8px 0;border-top:1px solid var(--line);list-style:none}
+#parking{padding:0;margin:8px 0 0}
+details{border-top:1px solid var(--line);padding:12px 0}
+summary{cursor:pointer;font-family:Sora,sans-serif;font-size:17px;min-height:32px}
+.note{font-size:13px;color:var(--dim)}
+footer{color:var(--dim);font-size:13px}
+.toast{position:fixed;left:50%;bottom:calc(20px + var(--safe-b));transform:translateX(-50%);background:var(--ice);color:#04121b;padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media(max-width:1000px){.controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.controls .wide{grid-column:1/-1}.hero,.grid2{grid-template-columns:minmax(0,1fr)}#nights{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:600px){#nights{grid-template-columns:repeat(2,minmax(0,1fr))}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}table{font-size:13px}#map{min-height:58vh}
+.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mute)}.stack td:empty{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<header class="band"><div class="wrap">
+  <h1>Meteor Chaser</h1>
+  <p class="lede">Where to drive tonight, and when to look up, to see the most meteors for the least road.</p>
+  <div id="status"><span class="pill" id="mode">Loading sky data…</span><span id="msg"></span></div>
+</div></header>
+
+<section class="band" style="padding-top:8px"><div class="wrap">
+  <form class="controls" id="form" autocomplete="off">
+    <div class="search wide"><label for="where">Starting from</label><input type="text" id="where" placeholder="City, or 34.07, -118.44" value="Westwood, Los Angeles"><div id="sugg" role="listbox"></div></div>
+    <div><label for="date">Night of</label><input type="date" id="date"></div>
+    <div><label for="maxMin">Longest drive one way <span class="val" id="maxMinV"></span></label><input type="range" id="maxMin" min="20" max="300" step="10" value="120"></div>
+    <div><label for="watch">Hours you'll watch <span class="val" id="watchV"></span></label><input type="range" id="watch" min="0.5" max="8" step="0.25" value="3"></div>
+    <div><label for="vot">An hour of driving is worth <span class="val" id="votV"></span></label><input type="range" id="vot" min="0" max="20" step="0.5" value="4"></div>
+  </form>
+  <div class="row2">
+    <div class="seg" role="group" aria-label="Count"><button type="button" data-count="total" aria-pressed="true">All meteors</button><button type="button" data-count="bright" aria-pressed="false">Bright ones</button></div>
+    <div id="cloudWrap" style="display:none;flex:1 1 260px"><label for="cloud">Cloud cover you expect <span class="val" id="cloudV"></span></label><input type="range" id="cloud" min="0" max="100" step="5" value="15"></div>
+    <button type="button" id="geo">Use my location</button>
+    <button type="button" class="primary" id="go">Find the sky</button>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+  <div id="nights" aria-label="Best site for each night"></div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap hero">
+  <div>
+    <div class="fig" id="map"><canvas id="mapc" aria-label="Sky-glow map with candidate sites"></canvas></div>
+    <div class="legend"><span>City glow</span><div class="ramp"></div><span>Natural dark</span><span class="pill" style="border-color:var(--ice);color:var(--ice)">○ Pareto frontier</span><span class="pill" style="border-color:var(--peach);color:var(--peach)">★ Pick</span></div>
+  </div>
+  <aside class="card pick" id="pick" aria-live="polite"><p class="mute">Working out the sky…</p></aside>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap grid2">
+  <div class="card"><h2>Meteors against driving time</h2><p class="mute" style="font-size:14px">Every dot is a site. The frontier holds the sites nothing else beats on both counts. The star is where your value of time lands you.</p><div class="fig" id="pareto"><svg id="paretoSvg" role="img" aria-label="Pareto frontier chart"></svg></div></div>
+  <div class="card"><h2>Hour by hour</h2><div class="hours" id="hours"></div><p class="note">Peach is the shower, blue is everything else.</p></div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap grid2">
+  <div class="card"><h2>Where to face</h2><svg id="compass" viewBox="-110 -110 220 220" role="img" aria-label="Radiant direction"></svg><p class="mute" id="faceTxt" style="margin-top:10px"></p></div>
+  <div class="card"><h2>Parking near the pick</h2><p class="mute" id="parkIntro">Real parking lots, viewpoints, campgrounds and rest areas from OpenStreetMap within 4 km. Needs the live version.</p><button type="button" id="findPark">Find places to park</button><ul id="parking"></ul></div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+  <div class="card"><h2>The next twelve months</h2><p class="mute">Every major shower, its best hour from your darkest reachable site, and how much moon is in the way.</p><div class="scroll"><table class="stack" id="cal"><thead><tr><th>Shower</th><th>Peak</th><th>Best hour</th><th class="num">Moon</th><th class="num">Per hour, clear</th><th>Speed</th></tr></thead><tbody></tbody></table></div></div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap grid2">
+  <div class="card"><h2>Tune it to your eyes</h2><p class="mute">After a night out, enter what the app predicted for your watch and what you counted. Every future number scales by your ratio.</p>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px"><div><label for="calPred">App predicted</label><input type="number" id="calPred" min="0" step="0.1" inputmode="decimal"></div><div><label for="calSeen">You counted</label><input type="number" id="calSeen" min="0" step="1" inputmode="numeric"></div></div>
+    <div class="row2"><button type="button" id="calSave">Save my ratio</button><button type="button" id="calReset">Reset</button><span class="mute" id="calNow"></span></div></div>
+  <div class="card"><h2>How it works</h2>
+    <details open><summary>The count</summary><p>For every 10 minutes of the night: the shower's ZHR at that solar longitude, times the sine of the radiant's altitude, times r<sup>(LM − 6.5)</sup>, times the share of sky not blocked by cloud. Sporadic meteors are added on a dawn-weighted curve. Integrated over your watch.</p></details>
+    <details><summary>The darkness</summary><p>Sky glow from all 33,961 cities over 15,000 people, by Walker's law, summed within 400 km and fitted to measured sky brightness at five Southern California sites (0.09 mag rms). Converted to SQM, Bortle class and naked-eye limiting magnitude, then cut by twilight and moonlight and raised slightly by altitude.</p></details>
+    <details><summary>The weather, roads and frontier</summary><p>Live version: Open-Meteo hourly low, mid and high cloud for every site (thin high cloud counts half), temperature and wind chill; elevation; OSRM drive times, which also snap every site to a real road and drop the ones in the sea or wilderness. Sites on the Pareto frontier can't be beaten on meteors and driving at once. The pick maximises meteors minus your hourly value of driving.</p></details>
+    <details><summary>What it can't know</summary><p>Whether a gate is locked, a lot is lit, or a road is icy. Outbursts not in the catalog. Local light from a single factory. Treat counts as ±40% and check the sky before you leave.</p></details>
+  </div>
+</div></section>
+
+<footer class="band"><div class="wrap">Data: GeoNames cities (CC BY), GLOBE land mask, Open-Meteo, OSRM, OpenStreetMap contributors (ODbL). Shower data after the IMO working list. Built after two nights chasing the 2026 Leonids from Los Angeles. <span id="ver"></span></div></footer>
+<div class="toast" id="toast" role="status"></div>
+<script src="model.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

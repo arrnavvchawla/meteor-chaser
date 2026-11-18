@@ -1,0 +1,8 @@
+{
+  "name": "meteor-chaser",
+  "version": "1.0.0",
+  "description": "Find the best place and hour to watch a meteor shower, anywhere on Earth.",
+  "bin": { "meteor-chaser": "cli.js" },
+  "scripts": { "test": "node tests/leonids2026.test.js", "start": "cd web && python3 -m http.server 8000" },
+  "license": "MIT"
+}

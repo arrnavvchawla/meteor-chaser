@@ -1,0 +1,14 @@
+{
+  "name": "Meteor Chaser",
+  "short_name": "Meteors",
+  "description": "Where to drive tonight, and when to look up, to see the most meteors for the least road.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060914",
+  "theme_color": "#060914",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
