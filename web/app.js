@@ -150,8 +150,8 @@ function render() {
 }
 function renderNights() {
   $('#nights').innerHTML = S.nights.map((N, i) => `<button type="button" class="night" data-n="${i}" aria-pressed="${i === S.night}">
-    <div class="d">${esc(dfmt(N.start, S.origin.tz))}</div><div class="n">${N.pick ? fmt1(N.pick.meteors) : '–'}</div>
-    <div class="s">${N.pick ? Math.round(N.pick.drive) + ' min away' : ''}</div><div class="moonbar" title="Moon ${Math.round(N.moon * 100)}%"><i style="width:${Math.round(N.moon * 100)}%"></i></div></button>`).join('');
+    <div class="d">${esc(dfmt(N.start, S.origin.tz))}</div><div class="n">${N.pick ? fmt1(N.pick.meteors) + ' meteors' : '–'}</div>
+    <div class="s">${N.pick ? (N.pick.drive < 5 ? 'from home' : Math.round(N.pick.drive) + ' min away') : ''} · moon ${Math.round(N.moon * 100)}%</div><div class="moonbar" title="Moon ${Math.round(N.moon * 100)}%"><i style="width:${Math.round(N.moon * 100)}%"></i></div></button>`).join('');
 }
 function topShower(r) {
   const tot = {}; for (const p of r.c.prof[S.night].slice(r.w.i, r.w.j)) for (const [k, v] of Object.entries(p.by)) tot[k] = (tot[k] || 0) + v.n;
@@ -179,7 +179,7 @@ function renderPick(r, N) {
     <ol class="sched">
       <li><time>${tfmt(leave, tz)}</time><span>Leave ${esc(S.origin.name.split(',')[0])}</span></li>
       <li><time>${tfmt(w.start, tz)}</time><span>Lights off, start watching</span></li>
-      <li><time>${tfmt(w.end, tz)}</time><span>Stop. ${w.end.getTime() - w.start.getTime() > 0 ? 'Best hour is the last one if the radiant is still climbing.' : ''}</span></li>
+      <li><time>${tfmt(w.end, tz)}</time><span>Stop</span></li>
       <li><time>${tfmt(home, tz)}</time><span>Home</span></li>
     </ol>
     <div class="actions"><a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${c.lat.toFixed(5)},${c.lon.toFixed(5)}" target="_blank" rel="noopener">Directions</a><button type="button" id="copyPlan">Copy plan</button></div>`;
@@ -195,7 +195,7 @@ function copyPlan(r, N) {
 }
 
 // ---------- map ----------
-const ramp = [[22, [6, 8, 26]], [21.6, [16, 20, 52]], [21.2, [34, 34, 92]], [20.7, [70, 40, 120]], [20.2, [120, 48, 128]], [19.6, [170, 64, 120]], [19, [214, 96, 95]], [18.4, [250, 180, 122]], [17.5, [255, 241, 200]]];
+const ramp = [[22, [7, 9, 15]], [21.6, [16, 18, 24]], [21.2, [30, 31, 36]], [20.7, [52, 51, 52]], [20.2, [84, 80, 74]], [19.6, [124, 116, 102]], [19, [168, 156, 134]], [18.4, [212, 198, 170]], [17.5, [246, 238, 214]]];
 function sqmColor(s) {
   if (s >= ramp[0][0]) return ramp[0][1]; for (let i = 1; i < ramp.length; i++) if (s >= ramp[i][0]) { const [a, ca] = ramp[i - 1], [b, cb] = ramp[i], f = (a - s) / (a - b); return ca.map((v, k) => Math.round(v + (cb[k] - v) * f)); }
   return ramp[ramp.length - 1][1];
@@ -204,7 +204,7 @@ function buildRaster() {
   const o = S.origin, E = S.extentKm * 1.7, n = 104, img = new ImageData(n, n), kx = 111.32 * Math.cos(o.lat * Math.PI / 180), ky = 110.57;
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
     const x = (i + 0.5) / n * 2 * E - E, y = E - (j + 0.5) / n * 2 * E, lat = o.lat + y / ky, lon = o.lon + x / kx, p = (j * n + i) * 4;
-    const col = LAND(lat, lon) ? sqmColor(MC.skyBrightness(IDX, lat, lon).sqm) : [3, 7, 18];
+    const col = LAND(lat, lon) ? sqmColor(MC.skyBrightness(IDX, lat, lon).sqm) : [3, 4, 8];
     img.data[p] = col[0]; img.data[p + 1] = col[1]; img.data[p + 2] = col[2]; img.data[p + 3] = 255;
   }
   const cv = document.createElement('canvas'); cv.width = cv.height = n; cv.getContext('2d').putImageData(img, 0, 0); S.skyRaster = cv;
@@ -215,9 +215,9 @@ function drawMap() {
   if (!S.skyRaster) buildRaster();
   const o = S.origin, E = S.extentKm, RE = E * 1.7, s = Math.min(W, H) / (2 * E), kx = 111.32 * Math.cos(o.lat * Math.PI / 180), ky = 110.57;
   const P = (lat, lon) => [W / 2 + (lon - o.lon) * kx * s, H / 2 - (lat - o.lat) * ky * s];
-  g.imageSmoothingEnabled = true; g.fillStyle = '#03070f'; g.fillRect(0, 0, W, H); g.drawImage(S.skyRaster, W / 2 - RE * s, H / 2 - RE * s, 2 * RE * s, 2 * RE * s);
+  g.imageSmoothingEnabled = true; g.fillStyle = '#030408'; g.fillRect(0, 0, W, H); g.drawImage(S.skyRaster, W / 2 - RE * s, H / 2 - RE * s, 2 * RE * s, 2 * RE * s);
   // drive-time rings
-  g.setLineDash([3, 5]); g.strokeStyle = 'rgba(233,237,248,.22)'; g.fillStyle = 'rgba(233,237,248,.55)'; g.font = '12px "IBM Plex Sans",sans-serif';
+  g.setLineDash([3, 5]); g.strokeStyle = 'rgba(233,237,248,.22)'; g.fillStyle = 'rgba(233,237,248,.55)'; g.font = '13px Louize, Newsreader, Georgia, serif';
   for (const m of [30, 60, 90, 120, 180, 240].filter((m) => m <= S.maxMin)) { const km = (m - 8) / 60 * 80 / 1.32; g.beginPath(); g.arc(W / 2, H / 2, km * s, 0, 7); g.stroke(); g.fillText(m + ' min', W / 2 + 4, H / 2 - km * s - 4); }
   g.setLineDash([]);
   // big cities
@@ -225,10 +225,10 @@ function drawMap() {
   for (const c of NAMED) { if (c[2] < 400) break; const [x, y] = P(c[0], c[1]); if (x > 8 && x < W - 60 && y > 14 && y < H - 6) { g.fillText(c[3].split(',')[0], x + 4, y - 4); } }
   const N = S.nights[S.night]; if (!N) return;
   const mx = Math.max(...N.res.map((r) => r.meteors), 1); S.mapPts = [];
-  for (const r of N.res) { const [x, y] = P(r.c.lat, r.c.lon), rad = 2 + 7 * Math.sqrt(r.meteors / mx); S.mapPts.push([x, y, r]); g.beginPath(); g.arc(x, y, rad, 0, 7); g.fillStyle = `rgba(233,237,248,${0.25 + 0.6 * r.meteors / mx})`; g.fill(); }
-  g.lineWidth = 2; g.strokeStyle = '#7fdcff';
+  for (const r of N.res) { const [x, y] = P(r.c.lat, r.c.lon), rad = 2 + 7 * Math.sqrt(r.meteors / mx); S.mapPts.push([x, y, r]); g.beginPath(); g.arc(x, y, rad, 0, 7); g.fillStyle = `rgba(160,200,255,${0.35 + 0.6 * r.meteors / mx})`; g.fill(); }
+  g.lineWidth = 1.5; g.strokeStyle = 'rgba(255,255,255,.9)';
   for (const r of N.front) { const [x, y] = P(r.c.lat, r.c.lon); g.beginPath(); g.arc(x, y, 11, 0, 7); g.stroke(); }
-  const cur = S.cur || N.pick; if (cur) { const [x, y] = P(cur.c.lat, cur.c.lon); star(g, x, y, 13, '#ffc9a3'); }
+  const cur = S.cur || N.pick; if (cur) { const [x, y] = P(cur.c.lat, cur.c.lon); star(g, x, y, 13, '#ffffff'); }
   const [ox, oy] = P(o.lat, o.lon); g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(ox - 8, oy); g.lineTo(ox + 8, oy); g.moveTo(ox, oy - 8); g.lineTo(ox, oy + 8); g.stroke();
 }
 function star(g, x, y, R, col) {
@@ -248,16 +248,16 @@ function drawPareto() {
   const m = { l: 44, r: 14, t: 14, b: 36 }, xs = N.res.map((r) => r.drive), ys = N.res.map((r) => r.meteors);
   const X = (v) => m.l + v / (Math.max(...xs, 1)) * (W - m.l - m.r), Y = (v) => H - m.b - v / (Math.max(...ys, 1) * 1.08) * (H - m.t - m.b);
   const ty = niceTicks(Math.max(...ys, 1) * 1.08, W < 520 ? 3 : 5), tx = niceTicks(Math.max(...xs, 1), W < 520 ? 3 : 6);
-  let h = ty.map((v) => `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#232c52"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end" fill="#9aa4c6" font-size="12">${v}</text>`).join('');
-  h += tx.map((v) => `<text x="${X(v)}" y="${H - m.b + 18}" text-anchor="middle" fill="#9aa4c6" font-size="12">${v}</text>`).join('');
-  h += `<text x="${W - m.r}" y="${H - 4}" text-anchor="end" fill="#6c769c" font-size="12">minutes of driving, one way</text>`;
-  h += N.res.map((r, i) => `<circle cx="${X(r.drive)}" cy="${Y(r.meteors)}" r="3.2" fill="#6c769c" opacity=".7" data-i="${i}" style="cursor:pointer"/>`).join('');
+  let h = ty.map((v) => `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule)"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end" fill="var(--mute)" font-size="14">${v}</text>`).join('');
+  h += tx.map((v) => `<text x="${X(v)}" y="${H - m.b + 18}" text-anchor="middle" fill="var(--mute)" font-size="14">${v}</text>`).join('');
+  h += `<text x="${W - m.r}" y="${H - 4}" text-anchor="end" fill="var(--mute)" font-size="14" font-style="italic">minutes of driving, one way</text>`;
+  h += N.res.map((r, i) => `<circle cx="${X(r.drive)}" cy="${Y(r.meteors)}" r="3" fill="var(--mute)" opacity=".55" data-i="${i}" style="cursor:pointer"/>`).join('');
   const fr = N.front; let path = '';
   fr.forEach((r, i) => { path += (i ? `H${X(r.drive)}V${Y(r.meteors)}` : `M${X(r.drive)},${Y(r.meteors)}`); });
-  h += `<path d="${path}" fill="none" stroke="#7fdcff" stroke-width="2"/>`;
-  h += fr.map((r) => `<circle cx="${X(r.drive)}" cy="${Y(r.meteors)}" r="5.5" fill="#060914" stroke="#7fdcff" stroke-width="2" data-i="${N.res.indexOf(r)}" style="cursor:pointer"/>`).join('');
+  h += `<path d="${path}" fill="none" stroke="var(--ink)" stroke-width="1.5"/>`;
+  h += fr.map((r) => `<circle cx="${X(r.drive)}" cy="${Y(r.meteors)}" r="5" fill="var(--bg)" stroke="var(--ink)" stroke-width="1.5" data-i="${N.res.indexOf(r)}" style="cursor:pointer"/>`).join('');
   const cur = S.cur || N.pick;
-  if (cur) { const x = X(cur.drive), y = Y(cur.meteors), right = x < W * 0.6; h += `<path d="${starPath(x, y, 10)}" fill="#ffc9a3" stroke="#060914"/><text x="${right ? x + 14 : x - 14}" y="${y + 4}" text-anchor="${right ? 'start' : 'end'}" fill="#ffc9a3" font-size="13">${fmt1(cur.meteors)} in ${Math.round(cur.drive)} min</text>`; }
+  if (cur) { const x = X(cur.drive), y = Y(cur.meteors), right = x < W * 0.6; h += `<path d="${starPath(x, y, 10)}" fill="var(--ink)" stroke="var(--bg)"/><text x="${right ? x + 14 : x - 14}" y="${y + 5}" text-anchor="${right ? 'start' : 'end'}" fill="var(--ink)" font-size="15">${fmt1(cur.meteors)} in ${Math.round(cur.drive)} min</text>`; }
   svg.innerHTML = h;
   svg.onclick = (e) => { const i = e.target.dataset?.i; if (i != null) select(N.res[+i]); };
 }
@@ -354,8 +354,8 @@ function drawDome() {
   // cloud veil
   if (p.T < 0.98) { g.fillStyle = `rgba(70,78,104,${(1 - p.T) * 0.75})`; g.fillRect(-R, -R, 2 * R, 2 * R); }
   g.restore();
-  g.strokeStyle = '#232c52'; g.lineWidth = 1; for (const a of [0, 30, 60]) { g.beginPath(); g.arc(0, 0, (90 - a) / 90 * R, 0, 7); g.stroke(); }
-  g.fillStyle = '#9aa4c6'; g.font = '13px Sora, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const css = getComputedStyle(document.documentElement); g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 1; for (const a of [30, 60]) { g.beginPath(); g.arc(0, 0, (90 - a) / 90 * R, 0, 7); g.stroke(); }
+  g.fillStyle = css.getPropertyValue('--mute') || '#6b6a64'; g.font = '15px Louize, Newsreader, Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
   [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([t, az]) => { const [x, y] = domePt(0, az, R + 13); g.fillText(t, x, y); });
   $('#domeClock').textContent = tfmt(p.t, S.origin.tz);
   $('#domeCount').textContent = `${fmt1(p.total * S.k)} meteors an hour right now${rb && rb.alt > 0 ? `, ${fmt1(rb.n * S.k)} of them ${sh.name}` : ''}. ${Math.round((1 - p.T) * 100)}% of the sky lost to cloud. Seen so far: ${dome.seen}.`;
@@ -457,7 +457,7 @@ const ro = new ResizeObserver(() => { if (S.nights.length) { drawMap(); drawPare
   calNow();
   S.live = await probeLive();
   $('#mode').className = 'pill ' + (S.live ? 'live' : 'off');
-  $('#mode').textContent = S.live ? '● Live forecast' : '○ Clear-sky model';
+  $('#mode').textContent = S.live ? 'Live forecast.' : 'Offline: clear-sky model, with your cloud guess.';
   if (!S.live) { $('#cloudWrap').style.display = 'block'; $('#cloud').value = S.cloud; $('#cloudV').textContent = S.cloud + '%'; $('#parkIntro').textContent = 'Live parking search needs the GitHub version of the app; this copy can\'t reach outside data.'; }
   $('#where').value = S.origin.name;
   go();

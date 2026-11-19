@@ -80,6 +80,10 @@ cli.js          terminal version
 tests/          ephemeris check against astropy, Leonids back-test
 ```
 
+## Type
+
+Set in Louize (205TF) when licensed files are placed in `web/fonts/`; otherwise Newsreader. See `web/fonts/README.md`.
+
 ## Data credits
 
 GeoNames (CC BY 4.0), GLOBE land mask via `global-land-mask`, Open-Meteo (CC BY 4.0), OSRM, OpenStreetMap contributors (ODbL). Shower parameters after the International Meteor Organization.
