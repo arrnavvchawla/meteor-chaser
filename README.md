@@ -82,10 +82,10 @@ tests/          ephemeris check against astropy, Leonids back-test
 
 ## Type
 
-Set in Louize (205TF) when licensed files are placed in `web/fonts/`; otherwise Newsreader. See `web/fonts/README.md`.
+Set in Louize by Matthieu Cortat (205TF), used under licence; Newsreader as fallback. The font files in `web/fonts/` are not covered by the MIT licence.
 
 ## Data credits
 
 GeoNames (CC BY 4.0), GLOBE land mask via `global-land-mask`, Open-Meteo (CC BY 4.0), OSRM, OpenStreetMap contributors (ODbL). Shower parameters after the International Meteor Organization.
 
-MIT License.
+Code: MIT License. Fonts: see `web/fonts/README.md`.

@@ -1,11 +1,5 @@
 # Fonts
 
-The site is set in **Louize** (205TF) when licensed files are here, and falls back to Newsreader otherwise.
+Louize by Matthieu Cortat (205TF), used under licence for this site. Web subsets (Latin) of Regular, Italic and Medium.
 
-Louize is a commercial typeface. If you hold a web licence, add:
-
-    Louize-Regular.woff2
-    Louize-Italic.woff2
-    Louize-Medium.woff2
-
-and push. Nothing else changes.
+These files are not open source and are not covered by this repository's MIT licence. Do not reuse them elsewhere.
