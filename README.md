@@ -9,7 +9,7 @@ Built after two nights chasing the 2026 Leonids out of Los Angeles: Circle X at 
 Give it a starting point, a night, how far you'll drive and how long you'll watch. It:
 
 1. **Drops ~150 candidate sites** in rings around you, on land only (0.05° global land mask).
-2. **Measures each one's sky darkness** from the glow of every city on Earth over 15,000 people (Walker's law, 33,961 cities, fitted to measured sky brightness).
+2. **Measures each one's sky darkness** from the glow of every city on Earth over 15,000 people (Walker's law, 33,961 cities, fitted to approximate published sky brightness at five sites).
 3. **Pulls the hourly forecast for every site** (low, mid and high cloud separately, temperature, wind chill), its elevation, and its real drive time by road. Routing also snaps each site onto a real road and throws out the ones in the sea or roadless wilderness.
 4. **Counts meteors every 10 minutes for 7 nights**: each active shower's ZHR at that solar longitude, radiant altitude, limiting magnitude after twilight and moonlight, cloud, and the dawn-weighted sporadic background.
 5. **Finds your best watch window at each site**, then the **Pareto frontier** of meteors against driving time.
@@ -35,6 +35,8 @@ node cli.js --lat 34.07 --lon -118.44 --date 2026-12-13 --max 150 --watch 3 --cl
 
 ## The model
 
+The full method, with derivations, proofs of the frontier properties and validation status, is at [`web/method.html`](web/method.html) (live: https://arrnavvchawla.github.io/meteor-chaser/method.html).
+
 For each 10-minute step *t* at site *s*:
 
 ```
@@ -52,7 +54,7 @@ k       = your personal calibration (default 1)
 |---|---|---|
 | Sun, Moon, radiants | Meeus low-precision series, J2000 radiants precessed to date, topocentric Moon | Within 0.07° of astropy at 5 sites (`tests/check_ephemeris.py`) |
 | Shower catalog | 14 showers after the IMO working list: peak λ⊙, ZHR, r, speed, activity slope, radiant drift | Peak dates match the IMO 2026 calendar |
-| Sky darkness | Walker's law over GeoNames cities ≥15k, coefficient fitted to measured SQM at Westwood, Circle X, Mount Pinos, Red Rock Canyon and Joshua Tree | 0.09 mag rms |
+| Sky darkness | Walker's law over GeoNames cities ≥15k, coefficient fitted to approximate published SQM values at Westwood, Circle X, Mount Pinos, Red Rock Canyon and Joshua Tree (not meter readings) | 0.09 mag rms; needs SQM-meter validation |
 | Weather | Open-Meteo hourly cloud layers, temperature, apparent temperature, wind | Live |
 | Roads | OSRM table service (drive times, snapping) | Live |
 | Parking | OpenStreetMap via Overpass: parking, viewpoints, campgrounds, picnic and rest areas | Live |
@@ -77,7 +79,8 @@ web/            the app (static; deploys as-is)
   land.json     global land mask, 0.05°, run-length encoded
   sw.js, manifest.webmanifest, icon.svg   installable offline app
 cli.js          terminal version
-tests/          ephemeris check against astropy, Leonids back-test
+tests/          ephemeris check against astropy, Leonids back-test, frontier proofs
+docs/           method source (TeX in HTML); tools/build_method.js renders it to MathML
 ```
 
 ## Type

@@ -113,7 +113,7 @@ footer{color:var(--mute);font-size:15px;padding-top:44px;padding-bottom:64px;bor
 <body>
 <header>
   <h1><a href="#top" id="top">Meteor Chaser</a></h1>
-  <nav aria-label="Sections"><a href="#tonight">Tonight</a><a href="#frontier">Frontier</a><a href="#sky">Sky</a><a href="#year">Year</a><a href="#method">Method</a></nav>
+  <nav aria-label="Sections"><a href="#tonight">Tonight</a><a href="#frontier">Frontier</a><a href="#sky">Sky</a><a href="#year">Year</a><a href="method.html">Method</a></nav>
 </header>
 <main>
 <section id="tonight" style="border:0">
@@ -187,8 +187,9 @@ footer{color:var(--mute);font-size:15px;padding-top:44px;padding-bottom:64px;bor
 
 <section id="method">
   <h2>How it works</h2>
+  <p>The full model, with every equation, the proofs behind the frontier and what has and hasn't been validated: <a href="method.html">read the method</a>.</p>
   <details open><summary>The count</summary><p>For every ten minutes of the night: the shower's rate at that point in Earth's orbit, times the sine of the radiant's altitude, times r<sup>(LM − 6.5)</sup>, times the share of sky the cloud leaves open. Random background meteors are added on a curve that peaks before dawn. Summed over your watch.</p></details>
-  <details><summary>The darkness</summary><p>Glow from all 33,961 cities over 15,000 people, by Walker's law, summed within 400 km and fitted to measured sky brightness at five Southern California sites (0.09 magnitude rms). Turned into Bortle class and naked-eye limit, then cut by twilight and moonlight and raised a little by altitude.</p></details>
+  <details><summary>The darkness</summary><p>Glow from all 33,961 cities over 15,000 people, by Walker's law, summed within 400 km and fitted to approximate published sky brightness at five Southern California sites (0.09 magnitude rms; meter readings still needed). Turned into Bortle class and naked-eye limit, then cut by twilight and moonlight and raised a little by altitude.</p></details>
   <details><summary>The weather, roads and frontier</summary><p>Open-Meteo hourly low, mid and high cloud for every site, with thin high cloud counted at half; temperature and wind chill; elevation. OSRM drive times, which also move each site onto a real road and drop the ones in the sea. The frontier holds the sites nothing beats on meteors and driving at once. The pick is meteors minus your hourly value of driving.</p></details>
   <details><summary>What it can't know</summary><p>A locked gate, a lit lot, an icy road, a single bright factory, an outburst outside the catalog. Counts are ±40%. Look at the sky before you leave.</p></details>
 </section>

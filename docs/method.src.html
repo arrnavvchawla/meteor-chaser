@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meteor Chaser: Method</title>
+<meta name="description" content="Mathematical model and multi-objective method behind Meteor Chaser, with proofs and validation status.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+/* VOICE  a methods paper written to be checked line by line.
+   IDEA   a preprint on paper: numbered sections, definitions, propositions, proofs, tables.
+   PICTURE the equations themselves, set large and quiet; one worked frontier table.
+   COLOUR paper and ink, grey rules, nothing else.
+   TYPE   Louize, Newsreader fallback; math in the system math face. */
+@font-face{font-family:Louize;src:url(fonts/Louize-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Louize;src:url(fonts/Louize-Italic.woff2) format("woff2");font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:Louize;src:url(fonts/Louize-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
+:root{color-scheme:light dark;--bg:light-dark(#f6f5f0,#151513);--ink:light-dark(#1b1b19,#e9e7e0);--mute:light-dark(#6b6a64,#a3a19a);--rule:light-dark(#dcdad2,#33322e);--soft:light-dark(#ecebe4,#1f1f1c)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:20px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.62 Louize,Newsreader,Georgia,serif;overflow-x:clip}
+main,header,footer{max-width:760px;margin:0 auto;padding:0 22px}
+header{padding-top:clamp(40px,8vw,80px)}
+h1{font-size:clamp(30px,5vw,42px);font-weight:400;line-height:1.08;margin:0 0 8px}
+h2{font-size:25px;font-weight:400;line-height:1.2;margin:46px 0 12px;padding-top:22px;border-top:1px solid var(--rule)}
+h3{font-size:19px;font-weight:500;margin:26px 0 8px}
+p,ul,ol{margin:0 0 14px}
+li{margin:0 0 6px}
+a{color:inherit;text-underline-offset:3px;text-decoration-thickness:1px;text-decoration-color:var(--mute)}
+nav{display:flex;flex-wrap:wrap;gap:4px 18px;color:var(--mute);margin-top:8px}nav a{color:var(--mute)}
+.mute{color:var(--mute)}
+.abstract{border-left:2px solid var(--ink);padding-left:16px;margin:24px 0}
+.toc{columns:2 220px;font-size:16px;color:var(--mute);margin:18px 0 0;padding-left:20px}
+.toc a{color:var(--mute)}
+math{font-family:"Latin Modern Math","STIX Two Math","Cambria Math",math;font-size:1.04em}
+.katex-display,.eq{display:block;overflow-x:auto;overflow-y:hidden;margin:14px 0 16px;padding:2px 0}
+.katex-display>math,.eq math{display:block}
+.eqn{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
+.eqn .no{color:var(--mute);font-size:15px}
+.box{border:1px solid var(--rule);padding:12px 16px;margin:16px 0}
+.box>b:first-child{font-weight:500}
+.proof{margin:-6px 0 16px;padding-left:16px;border-left:1px solid var(--rule)}
+.proof::after{content:"∎";float:right;color:var(--mute)}
+.tag{font-size:13px;letter-spacing:.02em;padding:1px 8px;border:1px solid var(--rule);border-radius:999px;white-space:nowrap;color:var(--mute);margin-left:6px;vertical-align:2px}
+.tag.ok{color:var(--ink);border-color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:16px;margin:10px 0 18px}
+th,td{text-align:left;padding:6px 10px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:400;color:var(--mute);font-size:14px}
+td.n,th.n{text-align:right;font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.scroll{overflow-x:auto}
+code{font-family:ui-monospace,Menlo,monospace;font-size:14px;background:var(--soft);padding:1px 5px;overflow-wrap:anywhere}
+pre{background:var(--soft);padding:12px 14px;overflow-x:auto;font-size:14px;line-height:1.5}
+pre code{background:none;padding:0}
+.refs li{font-size:16px}
+footer{color:var(--mute);font-size:15px;padding:40px 22px 64px;border-top:1px solid var(--rule);margin-top:48px}
+@media print{body{font-size:11.5pt;background:#fff;color:#000}nav,.noprint{display:none}h2{break-after:avoid}table,.box,.eq{break-inside:avoid}a{text-decoration:none}main,header,footer{max-width:none}}
+@media(max-width:600px){body{font-size:17px}table{font-size:14px}}
+</style>
+</head>
+<body>
+<header>
+  <p class="mute" style="margin:0 0 6px"><a href="./">Meteor Chaser</a> · Method</p>
+  <h1>Choosing where and when to watch a meteor shower: a model and a multi-objective method</h1>
+  <p class="mute">Vinod Chawla (Arrnavv) · UCLA · November 2026 · version 1.1 · <a href="https://github.com/arrnavvchawla/meteor-chaser">source</a></p>
+  <nav class="noprint"><a href="./">App</a><a href="#s-problem">Problem</a><a href="#s-pareto">Frontier</a><a href="#s-validation">Validation</a><a href="#s-limits">Limits</a></nav>
+</header>
+<main>
+
+<div class="abstract">
+<p><b>Abstract.</b> An observer at a point \(o\) on Earth wants to see as many meteors as possible on a given night, and wants to drive as little as possible to do it. We model the expected number of meteors seen from any site \(s\) during any window \([t,\,t+W]\) as a product of five factors: shower activity, radiant geometry, sky darkness, weather and observer sensitivity. Darkness depends on geography (artificial light from every town within 400 km) and topography (elevation). Weather is the forecast low, mid and high cloud. We then pose site choice as a bi-objective problem, maximise expected count and minimise drive time, over a finite candidate set built on real roads. We compute its Pareto frontier exactly. We prove that the app's single recommendation, a weighted-sum scalarisation, always lies on the frontier but can only reach the frontier's convex-hull vertices. That is why the whole frontier is shown. We report what has been verified (ephemeris to 0.07°, frontier properties by exhaustive test) and what has not yet been validated (the meteor-rate model against observations, the darkness model against meter readings).</p>
+</div>
+
+<p class="mute" style="font-size:16px">Status labels used below: <span class="tag ok">proved</span> a mathematical statement with proof; <span class="tag ok">verified</span> checked numerically against an independent reference; <span class="tag">standard</span> taken from the meteor-science literature; <span class="tag">heuristic</span> a modelling choice with stated constants, not yet validated; <span class="tag">open</span> needs data.</p>
+
+<ol class="toc">
+<li><a href="#s-problem">The problem</a></li><li><a href="#s-time">Time and sky geometry</a></li><li><a href="#s-showers">Shower activity</a></li><li><a href="#s-rate">From ZHR to expected count</a></li><li><a href="#s-lm">Limiting magnitude: darkness, twilight, moon, altitude</a></li><li><a href="#s-weather">Cloud</a></li><li><a href="#s-count">Expected count, window and uncertainty</a></li><li><a href="#s-geo">Geography: candidates, land, roads</a></li><li><a href="#s-pareto">The Pareto frontier</a></li><li><a href="#s-extend">More objectives: cold, risk, nights</a></li><li><a href="#s-example">Worked example</a></li><li><a href="#s-calib">Calibration to one observer</a></li><li><a href="#s-validation">Validation</a></li><li><a href="#s-limits">Limits and threats to validity</a></li><li><a href="#s-protocol">A protocol to test it</a></li><li><a href="#s-refs">References</a></li>
+</ol>
+
+<h2 id="s-problem">1. The problem</h2>
+<p>Let \(o=(\varphi_o,\lambda_o)\) be the observer's starting point, \(d\) a night, \(W\) the hours the observer will watch, and \(D_{\max}\) the longest one-way drive they accept. A <i>site</i> \(s\) is a point on a road reachable from \(o\). A <i>plan</i> is a pair \((s, t)\): a site and the start of a watch window \([t, t+W]\) that night.</p>
+<p>Two quantities matter to the observer:</p>
+<ul>
+<li>\(N(s,t)\), the expected number of meteors they will see, which they want large;</li>
+<li>\(\tau(s)\), the one-way drive time from \(o\) to \(s\), which they want small.</li>
+</ul>
+<p>Everything else (cloud, darkness, elevation, moon, the shower's peak) is a cause of \(N\), not a separate goal. Section 10 shows how to add comfort and risk as goals of their own. The problem is</p>
+<div class="eqn"><div class="eq">\[ \max_{(s,t)\in\mathcal P}\ \bigl(N(s,t),\,-\tau(s)\bigr), \qquad \mathcal P=\{(s,t): s\in S,\ \tau(s)\le D_{\max},\ t\in\mathcal T_d\}, \]</div><span class="no">(1)</span></div>
+<p>a bi-objective program over a finite set \(S\) of candidate sites (section 8) and a finite set \(\mathcal T_d\) of window starts (section 7). For each site the window is chosen first, because \(\tau\) does not depend on \(t\):</p>
+<div class="eqn"><div class="eq">\[ t^*(s)=\arg\max_{t\in\mathcal T_d} N(s,t), \qquad N^*(s)=N\bigl(s,t^*(s)\bigr). \]</div><span class="no">(2)</span></div>
+<p>This reduction is exact: if \((s,t)\) is Pareto-optimal for (1) then \(t=t^*(s)\), since otherwise \((s,t^*(s))\) has the same \(\tau\) and a larger \(N\). The problem becomes a bi-objective choice of site, \(\max_s (N^*(s), -\tau(s))\).</p>
+
+<h2 id="s-time">2. Time and sky geometry</h2>
+<p>All positions are computed from the Julian date \(J\). The Sun follows Meeus' low-precision series [1]: with \(T=(J-2451545)/36525\),</p>
+<div class="eq">\[ L_0=280.46646^\circ+36000.76983^\circ T,\quad M=357.52911^\circ+35999.05029^\circ T,\quad \lambda_\odot = L_0 + C(M), \]</div>
+<p>where \(C\) is the equation of centre. Meteor-shower times are catalogued by solar longitude in the J2000 frame, so we remove precession since J2000:</p>
+<div class="eqn"><div class="eq">\[ \lambda_{\odot,2000} = \lambda_\odot - 1.3970^\circ\,T. \]</div><span class="no">(3)</span></div>
+<p>The Moon uses the leading ten terms of the ELP series as given by Meeus, a topocentric parallax correction \(h\mapsto h-0.95^\circ\cos h\), and illuminated fraction \(I=\tfrac12(1-\cos E)\) from the Sun–Moon elongation \(E\). Radiants are catalogued in J2000 and precessed to the date with the first-order rates \(m=0.012811^\circ\)/yr and \(n=0.005567^\circ\)/yr:</p>
+<div class="eqn"><div class="eq">\[ \alpha \leftarrow \alpha + (m + n\sin\alpha\tan\delta)\,y,\qquad \delta\leftarrow\delta + n\cos\alpha\; y . \]</div><span class="no">(4)</span></div>
+<p>Altitude above the horizon at latitude \(\varphi\), longitude \(\lambda\), with Greenwich sidereal time \(\theta(J)\) and hour angle \(H=\theta+\lambda-\alpha\):</p>
+<div class="eqn"><div class="eq">\[ \sin h = \sin\varphi\sin\delta + \cos\varphi\cos\delta\cos H. \]</div><span class="no">(5)</span></div>
+<p><span class="tag ok">verified</span> Against astropy at five sites on four continents, both hemispheres, the largest altitude error is 0.01° for the Sun, 0.07° for the Moon and 0.00° for a radiant (table V1). An error of 0.1° changes \(\sin h\) by at most 0.0017, negligible next to the other uncertainties.</p>
+
+<h2 id="s-showers">3. Shower activity</h2>
+<p>A shower \(j\) is described by its peak solar longitude \(\lambda_j\), peak zenithal hourly rate \(Z_j\), population index \(r_j\), entry speed \(v_j\), activity slopes \(B_j\) (rise) and \(B'_j\) (fall), radiant \((\alpha_j,\delta_j)\) at peak and its daily drift \((\dot\alpha_j,\dot\delta_j)\) per degree of \(\lambda_\odot\). Following Jenniskens [2] and the IMO [3], activity falls off exponentially from the peak:</p>
+<div class="eqn"><div class="eq">\[ \mathrm{ZHR}_j(\lambda_\odot)=Z_j\cdot 10^{-B\,|\Delta\lambda|},\qquad \Delta\lambda=\lambda_\odot-\lambda_j,\quad B=\begin{cases}B_j & \Delta\lambda\le 0\\ B'_j & \Delta\lambda>0\end{cases} \]</div><span class="no">(6)</span></div>
+<p>and is set to zero outside the shower's active range. The radiant drifts linearly, \(\alpha_j(\lambda_\odot)=\alpha_j+\dot\alpha_j\Delta\lambda\), \(\delta_j(\lambda_\odot)=\delta_j+\dot\delta_j\Delta\lambda\), before precession (4). <span class="tag">standard</span> The catalog holds 14 showers; the values are below. The Leonid peak time matches the IMO 2026 calendar (\(\lambda_\odot=235.27^\circ\), 17 Nov 23:45 UT).</p>
+<div class="scroll"><table>
+<thead><tr><th>Shower</th><th class="n">λ peak</th><th class="n">ZHR</th><th class="n">r</th><th class="n">v km/s</th><th class="n">B / B′</th><th class="n">α, δ</th></tr></thead>
+<tbody>
+<tr><td>Quadrantids</td><td class="n">283.15</td><td class="n">80</td><td class="n">2.1</td><td class="n">41</td><td class="n">2.5</td><td class="n">230, +49</td></tr>
+<tr><td>Lyrids</td><td class="n">32.32</td><td class="n">18</td><td class="n">2.1</td><td class="n">49</td><td class="n">0.22</td><td class="n">271, +34</td></tr>
+<tr><td>eta Aquariids</td><td class="n">45.5</td><td class="n">50</td><td class="n">2.4</td><td class="n">66</td><td class="n">0.08</td><td class="n">338, −1</td></tr>
+<tr><td>S. delta Aquariids</td><td class="n">127</td><td class="n">25</td><td class="n">3.2</td><td class="n">41</td><td class="n">0.091</td><td class="n">340, −16</td></tr>
+<tr><td>alpha Capricornids</td><td class="n">127</td><td class="n">5</td><td class="n">2.5</td><td class="n">23</td><td class="n">0.13</td><td class="n">306, −9</td></tr>
+<tr><td>Perseids</td><td class="n">140.0</td><td class="n">100</td><td class="n">2.2</td><td class="n">59</td><td class="n">0.35 / 0.20</td><td class="n">48, +58</td></tr>
+<tr><td>Draconids</td><td class="n">195.07</td><td class="n">10</td><td class="n">2.6</td><td class="n">20</td><td class="n">1.5</td><td class="n">262, +54</td></tr>
+<tr><td>S. Taurids</td><td class="n">197</td><td class="n">5</td><td class="n">2.3</td><td class="n">27</td><td class="n">0.026</td><td class="n">32, +9</td></tr>
+<tr><td>Orionids</td><td class="n">208</td><td class="n">20</td><td class="n">2.5</td><td class="n">66</td><td class="n">0.12</td><td class="n">95, +16</td></tr>
+<tr><td>N. Taurids</td><td class="n">230</td><td class="n">5</td><td class="n">2.3</td><td class="n">29</td><td class="n">0.026</td><td class="n">58, +22</td></tr>
+<tr><td>Leonids</td><td class="n">235.27</td><td class="n">15</td><td class="n">2.5</td><td class="n">71</td><td class="n">0.39</td><td class="n">152, +22</td></tr>
+<tr><td>Geminids</td><td class="n">262.2</td><td class="n">150</td><td class="n">2.6</td><td class="n">35</td><td class="n">0.39 / 0.81</td><td class="n">112, +33</td></tr>
+<tr><td>Ursids</td><td class="n">270.7</td><td class="n">10</td><td class="n">3.0</td><td class="n">33</td><td class="n">0.9</td><td class="n">217, +76</td></tr>
+<tr><td>alpha Centaurids</td><td class="n">319.2</td><td class="n">6</td><td class="n">2.0</td><td class="n">58</td><td class="n">0.2</td><td class="n">210, −59</td></tr>
+</tbody></table></div>
+<p class="mute" style="font-size:15px">Values after the IMO working list and Jenniskens [2,3]; slopes \(B\) for several minor showers are approximate. Peak times, rates and slopes vary from year to year; model-predicted outbursts from individual dust trails are not included.</p>
+
+<h2 id="s-rate">4. From ZHR to expected count</h2>
+<p>The IMO defines the zenithal hourly rate from an observed count \(n\) over effective time \(T_{\mathrm{eff}}\) (hours), corrected to a radiant at the zenith, a limiting magnitude of 6.5 and a clear sky [3]:</p>
+<div class="eqn"><div class="eq">\[ \mathrm{ZHR}=\frac{n}{T_{\mathrm{eff}}}\cdot\frac{F\; r^{\,6.5-\mathrm{LM}}}{(\sin h_R)^{\gamma}}, \]</div><span class="no">(7)</span></div>
+<p>where \(F\ge 1\) corrects for the fraction of the field blocked by cloud, \(h_R\) is the radiant altitude, and \(\gamma\approx 1\). Inverting (7) gives the rate a standard observer should see, which is what we want to predict. With \(\gamma=1\) and \(F=1/\mathcal T\), where \(\mathcal T\) is the sky transparency of section 6:</p>
+<div class="box"><b>Shower rate.</b> For shower \(j\), site \(s\), time \(t\), observer factor \(k\),
+<div class="eqn"><div class="eq">\[ \rho_j(s,t)=\mathrm{ZHR}_j\bigl(\lambda_\odot(t)\bigr)\cdot \max\bigl(0,\sin h_{R,j}(s,t)\bigr)\cdot r_j^{\,\mathrm{LM}(s,t)-6.5}\cdot \mathcal T(s,t)\cdot k \quad\text{meteors/h}. \]</div><span class="no">(8)</span></div></div>
+<p>Each factor has a plain meaning. ZHR is how busy the stream is. \(\sin h_R\) is the geometric loss when the radiant is low: the observer's patch of atmosphere intercepts fewer meteors. \(r^{\mathrm{LM}-6.5}\) is the loss from a brighter sky: for every magnitude lost, a fraction \(1/r\) of meteors remain visible. \(\mathcal T\) is cloud. \(k\) is the observer (section 12).</p>
+<p><b>Background meteors.</b> Sporadic meteors and minor showers add a rate that rises through the night as the observer turns toward Earth's direction of motion. <span class="tag">heuristic</span> We use</p>
+<div class="eqn"><div class="eq">\[ \rho_0(s,t)=\Bigl[6+4\cos\tfrac{2\pi(\vartheta-6)}{24}\Bigr]\Bigl[1+0.25\,\sigma\cos(\lambda_\odot-210^\circ)\Bigr]\cdot 3.0^{\,\mathrm{LM}-6.5}\cdot\mathcal T\cdot k, \]</div><span class="no">(9)</span></div>
+<p>with \(\vartheta\) the local mean solar time in hours and \(\sigma=\pm1\) for the northern or southern hemisphere. This gives about 2/h in the evening and 10/h before dawn at LM 6.5, matching the AMS figures of about 2/h evening and about 9/h in the last hour before dawn [4]. The seasonal term is a rough northern-autumn maximum.</p>
+<p>Total rate: \(\rho(s,t)=\rho_0(s,t)+\sum_j \rho_j(s,t)\). <b>Bright meteors</b> (magnitude 2 or brighter, our working definition of "noticeable") are counted with \(f_j=\min(1,\,r_j^{\,4.5-\mathrm{LM}})\). <span class="tag">heuristic</span> The offset 2.5 approximates the drop in a human observer's detection probability for meteors near the limit; it is not fitted.</p>
+
+<h2 id="s-lm">5. Limiting magnitude: darkness, twilight, moon, altitude</h2>
+<h3>5.1 Artificial sky glow (geography)</h3>
+<p>Walker's law [5] states that the zenith sky glow from a city of population \(P\) at distance \(d\) km, as a fraction of the natural sky brightness, is \(0.01\,P\,d^{-2.5}\). We sum over every town \(i\) with \(P_i\ge 15{,}000\) within 400 km (33,961 towns, GeoNames), with an extra fitted factor \(c\):</p>
+<div class="eqn"><div class="eq">\[ \beta(s)=0.01\,c\sum_{i:\,d_i\le 400} P_i\,\max(d_i,\,a_i,\,1)^{-2.5},\qquad a_i=\sqrt{P_i/(3000\pi)}\ \text{km}, \]</div><span class="no">(10)</span></div>
+<p>where \(a_i\) is the radius of a town of density 3,000 people/km², so the sum stays finite inside a town. The sky brightness in magnitudes per square arcsecond, with a natural sky of 21.9, is</p>
+<div class="eqn"><div class="eq">\[ \mathrm{SQM}(s)=21.9-2.5\log_{10}\bigl(1+\beta(s)\bigr). \]</div><span class="no">(11)</span></div>
+<p>The single parameter \(c=0.3\) was fitted by least squares to five Southern California reference sites (table V2). <span class="tag">open</span> The reference values are approximate readings of published light-pollution maps, not meter measurements; see section 13.</p>
+<h3>5.2 Naked-eye limit</h3>
+<p>Sky brightness is converted to naked-eye limiting magnitude with the empirical relation in common use with Unihedron SQM meters [6]: <span class="tag">standard</span></p>
+<div class="eqn"><div class="eq">\[ \mathrm{NELM}=7.93-5\log_{10}\bigl(10^{\,4.316-\mathrm{SQM}/5}+1\bigr). \]</div><span class="no">(12)</span></div>
+<h3>5.3 Altitude, twilight and moonlight (topography and time)</h3>
+<p>The working limit adds three corrections, with \(z\) the site elevation in metres, \(h_\odot\) the Sun's altitude, and \(h_{\mathbb M}, I\) the Moon's altitude and illuminated fraction: <span class="tag">heuristic</span></p>
+<div class="eqn"><div class="eq">\[ \begin{aligned}\mathrm{LM}=\ &\mathrm{NELM}+\min\Bigl(0.4,\ 0.15\,\tfrac{z}{1000}\Bigr)\\ &-\min\bigl(4,\ 0.35\,(h_\odot+18^\circ)\bigr)^{+}-I\bigl(0.3+1.2\sin h_{\mathbb M}\bigr)^{+},\end{aligned} \]</div><span class="no">(13)</span></div>
+<p>where \((\cdot)^{+}\) means the term applies only when the Sun is above −18° or the Moon is above the horizon. The altitude term stands for the thinner, cleaner air over a mountain (less extinction, less haze), capped at 0.4 magnitudes. The twilight term removes about a third of a magnitude per degree of Sun altitude above astronomical twilight. The moon term removes up to 1.5 magnitudes for a full Moon overhead. All three are first-order approximations chosen to match observing experience; none is fitted. For \(h_\odot>-8^\circ\) all rates are set to zero.</p>
+
+<h2 id="s-weather">6. Cloud</h2>
+<p>The forecast (Open-Meteo, hourly) gives low, mid and high cloud fractions \(c_L,c_M,c_H\in[0,1]\). Assuming the three layers overlap at random, the fraction of sky clear of all three is \((1-c_L)(1-c_M)(1-c_H)\). High cloud is mostly thin cirrus, which dims meteors rather than hiding them, so it counts half: <span class="tag">heuristic</span></p>
+<div class="eqn"><div class="eq">\[ \mathcal T=(1-c_L)(1-c_M)(1-0.5\,c_H). \]</div><span class="no">(14)</span></div>
+<p>When only total cover \(c\) is available (offline mode), \(\mathcal T=1-c\). Equation (14) treats cloud as a deterministic fraction of sky lost. A sky that is 30% cloud for the whole night and a sky that is clear 70% of the time give the same expectation, but very different variances; see section 10.</p>
+
+<h2 id="s-count">7. Expected count, window and uncertainty</h2>
+<p>Time is sampled every \(\Delta=10\) minutes from 17:00 local time for 15 hours: \(t_m=t_0+m\Delta\). The expected count for a window of \(n=W/\Delta\) steps starting at step \(i\) is the left Riemann sum</p>
+<div class="eqn"><div class="eq">\[ N(s,i)=\sum_{m=i}^{i+n-1}\rho(s,t_m)\,\Delta, \qquad t^*(s)=t_{i^*},\ \ i^*=\arg\max_i N(s,i). \]</div><span class="no">(15)</span></div>
+<p><b>Discretisation error.</b> If \(\rho\) is Lipschitz in time with constant \(L\) (meteors/h²), the Riemann error is at most \(\tfrac12 L W\Delta\). For a shower rate climbing from 5 to 15/h over 3 hours, \(L\approx 3.3\) and the bound is 0.3 meteors for a 3-hour window, small next to the Poisson spread below. <span class="tag ok">proved</span></p>
+<p><b>Uncertainty.</b> Meteors arrive as a Poisson process, so given the model, the count seen \(X\sim\mathrm{Poisson}(N)\), with standard deviation \(\sqrt N\) and \(\Pr(X\ge m)=1-\sum_{x<m}e^{-N}N^x/x!\). Model error is larger: we quote ±40% on \(N\) until the model is validated (section 13).</p>
+<p><b>Cost.</b> For \(|S|\) sites, 7 nights, 91 time steps and 15 shower terms, the model makes about \(|S|\times 7\times 91\times 15\approx 1.4\times 10^{6}\) evaluations of (8) for \(|S|=150\); the window search adds \(O(|S|\cdot 91\cdot n)\). This runs in under a second in a browser.</p>
+
+<h2 id="s-geo">8. Geography: candidates, land, roads</h2>
+<p><b>Reach.</b> The maximum straight-line radius searched is \(R=\max\bigl(15,\ \tfrac{D_{\max}-8}{60}\cdot\tfrac{80}{1.32}\bigr)\) km: an 8-minute start-up, 80 km/h, and a road-to-line ratio of 1.32.</p>
+<p><b>Candidates.</b> Sites are placed on seven rings \(j=1,\dots,7\) at radius \(R_j=R\,(j/7)^{0.9}\), with \(n_j=\mathrm{round}(18\cdot\tfrac{j}{7}\cdot1.6)+6\) equally spaced bearings offset by \(11j^\circ\), plus the origin: 158 points, denser near home where small moves matter. Each point is the destination along a great circle of Earth radius 6371 km. Points in water are removed with a 0.05° global land mask (GLOBE).</p>
+<p><b>Roads.</b> In live mode the OSRM table service [7] returns, for every candidate, the driving time from \(o\) and the nearest point on the road network. Each candidate is moved to that point. It is dropped if the snap distance exceeds 6 km (open sea, roadless wilderness) or no route exists. Darkness (10) is recomputed at the new point. \(\tau(s)\) is the OSRM time × 1.05 for night caution. Offline, \(\tau\) is estimated as \(1.32\,d/v(d)\cdot 60+8\) minutes with \(v=50\), 72 or 85 km/h for \(d<40\), \(<120\) or longer. Sites with \(\tau>1.08\,D_{\max}\) are excluded.</p>
+<p><b>Topography.</b> Elevation \(z(s)\) (Open-Meteo) enters the limiting magnitude (13) and the forecast temperature. Terrain blocking the horizon is <i>not</i> modelled; for a high radiant this matters little, for a low one it can matter a great deal.</p>
+
+<h2 id="s-pareto">9. The Pareto frontier</h2>
+<p>Write each site as the point \(x(s)=\bigl(\tau(s),\,N^*(s)\bigr)\) in the plane, cost on the horizontal axis and reward on the vertical.</p>
+<div class="box"><b>Definition 1 (dominance).</b> Site \(a\) dominates site \(b\), written \(a\succ b\), if \(\tau(a)\le\tau(b)\) and \(N^*(a)\ge N^*(b)\), with at least one inequality strict.<br><b>Definition 2 (frontier).</b> The Pareto frontier is \(F=\{s\in S:\ \nexists\,a\in S,\ a\succ s\}\).</div>
+<p>The app computes \(F\) by direct comparison of all pairs, \(O(|S|^2)\), which is exact for a finite set.</p>
+<div class="box"><b>Proposition 1 (the frontier exists and covers everything).</b> For finite non-empty \(S\), \(F\neq\varnothing\), and every \(b\notin F\) is dominated by some \(a\in F\).</div>
+<div class="proof">Dominance is irreflexive and transitive, so it is a strict partial order on a finite set. A strict partial order on a finite non-empty set has maximal elements; those are exactly \(F\). If \(b\notin F\), some \(a_1\succ b\). If \(a_1\notin F\), some \(a_2\succ a_1\), and so on. By transitivity and irreflexivity no element repeats, so the chain ends after at most \(|S|\) steps at some \(a\in F\), and \(a\succ b\) by transitivity.</div>
+<div class="box"><b>Proposition 2 (the frontier is a staircase).</b> If no two sites share both coordinates, then sorted by \(\tau\) the frontier is strictly increasing in both \(\tau\) and \(N^*\).</div>
+<div class="proof">Take \(a,b\in F\) with \(\tau(a)\le\tau(b)\). If \(N^*(a)\ge N^*(b)\), then \(a\) dominates \(b\) unless both coordinates are equal, which is excluded; contradiction. So \(N^*(a)<N^*(b)\). And \(\tau(a)=\tau(b)\) with \(N^*(a)<N^*(b)\) would make \(b\succ a\); so \(\tau(a)<\tau(b)\).</div>
+<p>So walking along the frontier, every extra minute of driving buys strictly more meteors. Off the frontier, it doesn't: some other site is both closer and better.</p>
+<h3>9.1 One recommendation from the frontier</h3>
+<p>The app picks one plan by maximising meteors minus the value of round-trip driving, where \(v\ge0\) is the observer's stated worth of one hour of driving, in meteors:</p>
+<div class="eqn"><div class="eq">\[ U_v(s)=N^*(s)-v\cdot\frac{2\,\tau(s)}{60},\qquad s_v^*=\arg\max_{s\in S}U_v(s). \]</div><span class="no">(16)</span></div>
+<p>This is the weighted-sum scalarisation of (1) [8,9]. \(v\) is a marginal rate of substitution: the observer is indifferent between one more hour on the road and \(v\) more meteors.</p>
+<div class="box"><b>Proposition 3 (the pick is efficient).</b> For every \(v>0\), every maximiser \(s_v^*\) of (16) lies on \(F\). For \(v=0\), at least one maximiser does.</div>
+<div class="proof">Suppose \(v>0\) and \(s^*\notin F\). Then some \(a\succ s^*\): \(\tau(a)\le\tau(s^*)\) and \(N^*(a)\ge N^*(s^*)\), one strictly. Because \(v>0\), \(U_v\) is strictly increasing in \(N^*\) and strictly decreasing in \(\tau\), so \(U_v(a)>U_v(s^*)\), contradicting maximality. For \(v=0\), \(U_0=N^*\); among the sites with the largest \(N^*\), the one with the least \(\tau\) is on \(F\).</div>
+<div class="box"><b>Proposition 4 (which frontier points can be picked).</b> As \(v\) ranges over \([0,\infty)\), the set of picks \(\{s_v^*\}\) is exactly the set of vertices of the upper-left convex hull of \(F\) in the \((\tau,N^*)\) plane. A frontier point strictly below a hull edge is never picked, for any \(v\).</div>
+<div class="proof">Maximising \(N^*-\tfrac{v}{30}\tau\) is maximising the linear functional \(\langle(-\tfrac{v}{30},1),x\rangle\) over the finite point set \(\{x(s)\}\). The maximum of a linear functional over a finite set is attained at a vertex of its convex hull, on the face whose outward normal is \((-\tfrac{v}{30},1)\). As \(v\) runs from 0 to \(\infty\), the normal sweeps every direction with non-negative vertical and non-positive horizontal component. The hull vertices met are those of the upper-left chain, which by Proposition 3 lie in \(F\). A point strictly inside the hull is never the unique maximiser of a linear functional. The pick changes exactly when \(v/30\) equals the slope of a hull edge.</div>
+<p><b>Consequence.</b> A single slider can never recommend an "unsupported" frontier site: one that is a fine compromise but sits in a dent of the frontier. That is why the app draws the whole frontier and lets the user click any point on it. In the worked example (section 11), 7 sites are on the frontier and only 4 of them can ever be the pick. To reach any frontier point by a single parameter, use the ε-constraint form instead [8]: \(\max N^*(s)\) subject to \(\tau(s)\le\varepsilon\), which recovers every element of \(F\) as \(\varepsilon\) varies over the frontier's \(\tau\) values.</p>
+<p><b>Knee.</b> With both axes rescaled to \([0,1]\) over the frontier, \(\tilde\tau,\tilde N\), the knee is \(\arg\max_{s\in F}(\tilde N(s)-\tilde\tau(s))\): the frontier point farthest above the line joining its cheapest and its richest ends. It is the point of greatest return relative to the frontier's overall trade-off. It is computed but, since it depends on the axis scaling, it is not used for the pick.</p>
+
+<h2 id="s-extend">10. More objectives: cold, risk, nights</h2>
+<p>Weather, geography and topography enter the problem through \(N^*\) (cloud through \(\mathcal T\), towns through \(\beta\), elevation through LM) and through the constraint set (land, roads, reach). Two further concerns came up in the field and are not reducible to \(N\):</p>
+<ul>
+<li><b>Cold.</b> Let \(\kappa(s)=-\min_{t\in[t^*,t^*+W]}T_{\mathrm{app}}(s,t)\), the negative of the coldest forecast apparent temperature during the watch. A cold observer stops looking. This is displayed but not yet optimised.</li>
+<li><b>Forecast risk.</b> A forecast of 30% cloud can mean "patchy all night" or "a 30% chance it's overcast". Let \(\sigma_N(s)\) be the spread of \(N^*\) across forecast ensemble members or models. Two sites with equal \(N^*\) differ in risk.</li>
+</ul>
+<p>The general problem is \(\max_s\bigl(N^*(s),-\tau(s),-\kappa(s),-\sigma_N(s)\bigr)\). Definitions 1–2 and Propositions 1, 3 and 4 carry over unchanged to any number of objectives; Proposition 2 (the staircase) is specific to two. The frontier in more dimensions is typically much larger, so the practical route is the ε-constraint method: fix tolerances (for example coldest feels-like ≥ −5 °C, \(\sigma_N/N^*\le 0.3\)), then solve the bi-objective problem on the sites that pass.</p>
+<p><b>Nights.</b> The app evaluates 7 nights independently. Choosing among nights is the same problem over \(S\times\{d_1,\dots,d_7\}\); the seven-night list shows each night's pick, and the best night is the one with the largest \(U_v\).</p>
+
+<h2 id="s-example">11. Worked example</h2>
+<p>Night of 17–18 November 2026, starting from Westwood, Los Angeles. \(D_{\max}=120\) min, \(W=3\) h, a uniform 12% cloud (offline mode, estimated drive times). 77 land sites lie within reach. The frontier has 7 sites, of which 4 are hull vertices and can be picked by some \(v\). Every site's best window is the same, 2:10–5:10 AM PST: the window is pinned by Leo's rise and the start of twilight, not by the site.</p>
+<div class="scroll"><table>
+<thead><tr><th class="n">τ (min)</th><th class="n">N*</th><th class="n">SQM</th><th class="n">NELM</th><th>Site</th><th>Pickable</th></tr></thead>
+<tbody>
+<tr><td class="n">0</td><td class="n">4.5</td><td class="n">17.95</td><td class="n">3.93</td><td>Westwood (home)</td><td>yes</td></tr>
+<tr><td class="n">39</td><td class="n">7.5</td><td class="n">18.59</td><td class="n">4.45</td><td>34.243, −118.399 (Verdugo/Tujunga foothills)</td><td>no</td></tr>
+<tr><td class="n">66</td><td class="n">19.3</td><td class="n">19.88</td><td class="n">5.41</td><td>34.375, −118.290 (Angeles Forest)</td><td>no</td></tr>
+<tr><td class="n">66</td><td class="n">30.9</td><td class="n">20.62</td><td class="n">5.89</td><td>34.094, −119.012 (western Santa Monica Mtns)</td><td>no</td></tr>
+<tr><td class="n">83</td><td class="n">39.6</td><td class="n">21.04</td><td class="n">6.14</td><td>34.555, −118.898</td><td>yes</td></tr>
+<tr><td class="n">100</td><td class="n">45.7</td><td class="n">21.30</td><td class="n">6.28</td><td>34.658, −119.007</td><td>yes</td></tr>
+<tr><td class="n">116</td><td class="n">49.2</td><td class="n">21.45</td><td class="n">6.36</td><td>34.761, −119.111 (Lockwood Valley)</td><td>yes</td></tr>
+</tbody></table></div>
+<p>With \(v=4\) meteors per hour of driving, the pick is the last row: 49 expected meteors for 116 minutes each way. The model reached the Lockwood Valley and Mount Pinos area on its own; that night the observer went to Red Rock Canyon, outside this 120-minute reach. The two 66-minute rows are both on the frontier: the 19.3-meteor site is a few seconds closer, so the 30.9-meteor site does not dominate it. The frontier is exact, so a site can be efficient by a margin that means nothing in practice. The remedy is ε-dominance [9]: treat drive times within, say, 5 minutes as equal, which here would remove the 19.3 site. The three "no" rows lie below the hull edge from home to the 83-minute site, so no single value of \(v\) selects them (Proposition 4).</p>
+
+<h2 id="s-calib">12. Calibration to one observer</h2>
+<p>Real observers see fewer meteors than the IMO standard observer, by a roughly constant factor. If \(X_1,\dots,X_m\) are counts on nights with model predictions \(N_1,\dots,N_m\), and \(X_i\sim\mathrm{Poisson}(kN_i)\), the log-likelihood \(\ell(k)=\sum_i\bigl(X_i\log(kN_i)-kN_i\bigr)\) has \(\ell'(k)=\sum X_i/k-\sum N_i\) and \(\ell''<0\), so the maximum-likelihood estimate is</p>
+<div class="eqn"><div class="eq">\[ \hat k=\frac{\sum_i X_i}{\sum_i N_i}, \qquad \operatorname{SE}(\hat k)\approx\frac{\sqrt{\sum_i X_i}}{\sum_i N_i}. \]</div><span class="no">(17)</span></div>
+<p><span class="tag ok">proved</span> The app currently updates \(k\leftarrow k\cdot X/N\) after each entry, which equals (17) after one night but not after several. Version 1.2 will store the sums and use (17).</p>
+
+<h2 id="s-validation">13. Validation</h2>
+<h3>V1. Ephemeris <span class="tag ok">verified</span></h3>
+<p>Altitude errors against astropy (<code>tests/check_ephemeris.py</code>):</p>
+<div class="scroll"><table><thead><tr><th>UTC</th><th>Site</th><th class="n">Sun</th><th class="n">Moon</th><th class="n">Radiant</th></tr></thead><tbody>
+<tr><td>2026-11-18 12:00</td><td>Circle X, California</td><td class="n">0.00°</td><td class="n">0.06°</td><td class="n">0.00°</td></tr>
+<tr><td>2026-08-12 09:00</td><td>London</td><td class="n">0.00°</td><td class="n">0.07°</td><td class="n">0.00°</td></tr>
+<tr><td>2026-12-14 20:00</td><td>Sydney</td><td class="n">0.00°</td><td class="n">0.07°</td><td class="n">0.00°</td></tr>
+<tr><td>2027-01-04 03:00</td><td>Reykjavík</td><td class="n">0.00°</td><td class="n">0.05°</td><td class="n">0.00°</td></tr>
+<tr><td>2026-05-06 22:00</td><td>Antofagasta, Chile</td><td class="n">0.01°</td><td class="n">0.03°</td><td class="n">0.00°</td></tr>
+</tbody></table></div>
+<h3>V2. Sky brightness fit <span class="tag">open</span></h3>
+<div class="scroll"><table><thead><tr><th>Site</th><th class="n">Reference SQM</th><th class="n">Model</th><th class="n">Residual</th><th class="n">Bortle</th></tr></thead><tbody>
+<tr><td>Westwood, Los Angeles</td><td class="n">18.0</td><td class="n">17.95</td><td class="n">−0.05</td><td class="n">8</td></tr>
+<tr><td>Circle X / Sandstone Peak</td><td class="n">20.4</td><td class="n">20.31</td><td class="n">−0.09</td><td class="n">5</td></tr>
+<tr><td>Mount Pinos</td><td class="n">21.4</td><td class="n">21.48</td><td class="n">+0.08</td><td class="n">4</td></tr>
+<tr><td>Red Rock Canyon</td><td class="n">21.5</td><td class="n">21.65</td><td class="n">+0.15</td><td class="n">4</td></tr>
+<tr><td>Joshua Tree, south</td><td class="n">21.7</td><td class="n">21.63</td><td class="n">−0.07</td><td class="n">4</td></tr>
+</tbody></table></div>
+<p>RMS residual 0.093 mag with one free parameter. <b>Caveat.</b> The reference values are approximate figures read from published light-pollution maps (World Atlas–type estimates [10]), not readings from an SQM meter. The fit shows the functional form (10) can reproduce them; it does not yet show the form is right. Five points in one region cannot test whether \(c\) transfers to other countries, where outdoor lighting per person differs.</p>
+<h3>V3. Frontier properties <span class="tag ok">verified</span></h3>
+<p><code>tests/frontier.test.js</code> checks on the worked example that: no frontier point is dominated; every other point is dominated by a frontier point (Proposition 1); the frontier is a strict staircase (Proposition 2); for 1,201 values of \(v\in[0,60]\) the pick is on the frontier (Proposition 3); and the set of picks equals the computed convex-hull vertices (Proposition 4). The tests run on every commit.</p>
+<h3>V4. One-night back-test <span class="tag">open</span></h3>
+<p>17 Nov 2026, Circle X, 2:30–4:00 AM PST, about 25% cloud: the model predicts 11.8 meteors (4.5 Leonids, 3.3 bright). The observer reported 6 bright, conspicuous meteors plus fainter ones, not formally counted. This is consistent with the model but, with one night and no standard count, it is not a test.</p>
+<h3>Not yet validated</h3>
+<ul>
+<li>The rate model (8)–(9) against IMO Visual Meteor Database counts.</li>
+<li>The heuristic corrections in (13) and (14), and the bright-meteor fraction.</li>
+<li>Cloud-forecast skill at the hour scale, and the effect of forecast error on the pick.</li>
+<li>OSRM night drive times on mountain roads.</li>
+</ul>
+
+<h2 id="s-limits">14. Limits and threats to validity</h2>
+<ul>
+<li><b>Light pollution.</b> Walker's law ignores direction of light, shielding by terrain, lighting technology (LED versus sodium) and single large sources (ports, refineries, greenhouses). It was fitted in one region.</li>
+<li><b>Horizon.</b> Terrain and trees blocking the sky are not modelled.</li>
+<li><b>Access.</b> The model does not know whether a gate is locked, a lot is lit, parking at night is legal, or a road is icy. In the field this mattered more than the model's second decimal.</li>
+<li><b>Showers.</b> Fixed parameters per shower; no year-to-year variation, no predicted outbursts from individual dust trails.</li>
+<li><b>Cloud.</b> Deterministic fraction (14); layers assumed to overlap at random; no forecast uncertainty.</li>
+<li><b>Discretisation.</b> 158 candidates, so the true optimum may lie between them. Refining around the pick would tighten this.</li>
+<li><b>Observer.</b> One factor \(k\) per person; no fatigue, no field-of-view or age effects.</li>
+</ul>
+
+<h2 id="s-protocol">15. A protocol to test it</h2>
+<ol>
+<li><b>Darkness.</b> Carry an SQM meter to 15–20 sites across a range of predicted SQM. Refit \(c\) and test the residuals. Compare against the VIIRS-based World Atlas [10] at the same points.</li>
+<li><b>Rates.</b> Use IMO standard counting: 15-minute periods, limiting magnitude by star triangle counts, percent of field obscured. Record \(X_i\) and the model's \(N_i\). Test \(X_i\sim\mathrm{Poisson}(kN_i)\) by Poisson deviance and a dispersion test. Repeat across showers with different \(r\) and speeds.</li>
+<li><b>Historical.</b> Run the model on past nights in the IMO Visual Meteor Database and compare predicted with reported rates, after removing the observer factor.</li>
+<li><b>Decisions.</b> For nights with real counts at more than one site, check whether the frontier ordering of sites matches the observed ordering (rank correlation).</li>
+</ol>
+
+<h2>Reproduce</h2>
+<pre><code>git clone https://github.com/arrnavvchawla/meteor-chaser
+cd meteor-chaser
+node tests/leonids2026.test.js        # model back-test and assertions
+node tests/frontier.test.js           # Propositions 1–4 and the worked example
+python3 tests/check_ephemeris.py      # needs astropy
+node cli.js --lat 34.07 --lon -118.44 --date 2026-12-13 --max 150 --watch 3 --cloud 10</code></pre>
+
+<h2 id="s-refs">References</h2>
+<ol class="refs">
+<li>Meeus, J. <i>Astronomical Algorithms</i>, 2nd ed. Willmann-Bell, 1998.</li>
+<li>Jenniskens, P. <i>Meteor Showers and their Parent Comets</i>. Cambridge University Press, 2006.</li>
+<li>International Meteor Organization. <i>Meteor Shower Calendar 2026</i>; and Rendtel, J., Arlt, R. (eds.), <i>Handbook for Meteor Observers</i>. IMO.</li>
+<li>American Meteor Society. <i>Meteor Activity Outlook, November 14–20, 2026</i>.</li>
+<li>Walker, M. F. "The effects of urban lighting on the brightness of the night sky." <i>Publications of the Astronomical Society of the Pacific</i> 89 (1977): 405–409.</li>
+<li>Unihedron. <i>Sky Quality Meter</i> documentation (SQM to naked-eye limiting magnitude conversion).</li>
+<li>Luxen, D., Vetter, C. "Real-time routing with OpenStreetMap data." <i>Proc. 19th ACM SIGSPATIAL GIS</i>, 2011.</li>
+<li>Miettinen, K. <i>Nonlinear Multiobjective Optimization</i>. Kluwer, 1999.</li>
+<li>Ehrgott, M. <i>Multicriteria Optimization</i>, 2nd ed. Springer, 2005.</li>
+<li>Falchi, F., et al. "The new world atlas of artificial night sky brightness." <i>Science Advances</i> 2 (2016): e1600377.</li>
+</ol>
+</main>
+<footer>Meteor Chaser · <a href="./">Open the app</a> · <a href="https://github.com/arrnavvchawla/meteor-chaser">Source and tests</a></footer>
+</body>
+</html>

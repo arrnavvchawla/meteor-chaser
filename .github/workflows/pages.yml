@@ -12,6 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: node tests/leonids2026.test.js
+      - run: node tests/frontier.test.js
   deploy:
     needs: test
     runs-on: ubuntu-latest
